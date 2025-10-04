@@ -49,9 +49,12 @@ app.use((req, res, next) => {
 app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const HOST = "0.0.0.0"; // ← important for containers
+app.listen(PORT, HOST, () => {
+  console.log(`Server listening on http://${HOST}:${PORT}`);
 });
+
+app.get("/healthz", (req, res) => res.send("ok"));
 
 // async/promises error rejection handler outside express
 process.on("unhandledRejection", (err) => {
