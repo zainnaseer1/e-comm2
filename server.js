@@ -40,6 +40,9 @@ if (process.env.NODE_ENV === "development") {
 // use the routes from routes/index.js
 mountRoutes(app);
 
+app.get("/", (req, res) => res.send("API is running ✅"));
+app.get("/healthz", (req, res) => res.send("ok"));
+
 // Handle 404 errors for undefined routes
 app.use((req, res, next) => {
   next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404));
@@ -53,8 +56,6 @@ const HOST = "0.0.0.0"; // ← important for containers
 app.listen(PORT, HOST, () => {
   console.log(`Server listening on http://${HOST}:${PORT}`);
 });
-
-app.get("/healthz", (req, res) => res.send("ok"));
 
 // async/promises error rejection handler outside express
 process.on("unhandledRejection", (err) => {
