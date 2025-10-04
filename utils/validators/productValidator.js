@@ -3,7 +3,7 @@ const validatorMiddleware = require("../../middleware/validatorMiddleware.js");
 const checker = require("../../middleware/validatorMiddleware.js");
 
 const Category = require("../../models/categoryModel.js");
-const SubCategory = require("../../models/subcategoryModel.js");
+const SubCategory = require("../../models/subCategoryModel.js");
 const Brand = require("../../models/brandModel.js");
 
 const createProductValidator = [

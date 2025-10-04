@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 // const ApiError = require("../utils/apiError.js");
-const SubCategory = require("../models/subcategoryModel.js");
+const SubCategory = require("../models/subCategoryModel.js");
 // const ApiFeatures = require("../utils/apiFeatures.js");
 const factory = require("./handlersFactory.js");
 
