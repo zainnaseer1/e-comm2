@@ -1,0 +1,63 @@
+const express = require("express");
+const cors = require("cors");
+const path = require("path"); //core module to handle file and directory paths
+const morgan = require("morgan"); //logger
+const compression = require("compression");
+
+const ApiError = require("./utils/apiError.js");
+const dbConnection = require("./config/database.js");
+const globalErrorHandler = require("./middleware/errorMiddleware.js");
+const { mountRoutes } = require("./routes"); // will auto use index.js file
+
+require("dotenv").config({ path: "config.env" });
+
+//connecting to database
+dbConnection();
+// Initialize Express app
+const app = express();
+//enable other domains to access your application
+app.use(cors()); // handles CORS + preflight, no explicit app.options needed\
+// compress all responses
+app.use(compression());
+
+// app.options("(.*)", cors());  // ❌ remove this line
+//a tiny middleware instead (but again, not needed if cors() is on)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+//middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
+
+//logger
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+  console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
+}
+
+// use the routes from routes/index.js
+mountRoutes(app);
+
+// Handle 404 errors for undefined routes
+app.use((req, res, next) => {
+  next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
+
+// Global error handler for express
+app.use(globalErrorHandler);
+
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+// async/promises error rejection handler outside express
+process.on("unhandledRejection", (err) => {
+  console.error(`Unhandled Rejection: ${err.name} - ${err.message}`);
+  server.close(() => {
+    console.error("Shutting down server due to unhandled rejection...");
+    process.exit(1); // Exit the process after closing the server
+  });
+});

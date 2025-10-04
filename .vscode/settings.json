@@ -1,0 +1,24 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  "eslint.enable": true,
+  "eslint.run": "onSave",
+  "eslint.format.enable": true,
+  "eslint.alwaysShowStatus": true,
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit", // ✅ new correct way
+    "source.organizeImports": "explicit" // optional
+  },
+  "cSpell.words": [
+    "dummyhashdummyhashdummyhashuu",
+    "localfield",
+    "maxlength",
+    "virtuals"
+  ]
+}
