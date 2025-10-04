@@ -32,9 +32,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
 
 //logger
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-  console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
+// if (process.env.NODE_ENV === "development") {
+//   app.use(morgan("dev"));
+//   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
+// }
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config({ path: "config.env" });
 }
 
 // use the routes from routes/index.js
