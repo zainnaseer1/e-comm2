@@ -7,3 +7,5 @@ config.env
 # keep the uploads folder but ignore its contents
 uploads/*
 !uploads/.gitkeep
+
+nodejs-getting-started/
