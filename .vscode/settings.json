@@ -17,8 +17,10 @@
   },
   "cSpell.words": [
     "dummyhashdummyhashdummyhashuu",
+    "healthz",
     "localfield",
     "maxlength",
     "virtuals"
-  ]
+  ],
+  "postman.settings.dotenv-detection-notification-visibility": false
 }
