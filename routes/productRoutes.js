@@ -38,7 +38,7 @@ router
     createProductValidator,
     createProduct,
   )
-  .get(auth.authenticated, getProducts);
+  .get(getProducts);
 
 router
   .route("/:id")
