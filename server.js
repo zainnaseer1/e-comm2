@@ -51,10 +51,12 @@ app.use(
 );
 
 app.post("/github/webhook", (req, res) => {
-  const sig = req.get("X-Hub-Signature-256");
-  let rawBody = req.rawBody;
-  if (!isValidSignature(sig, rawBody))
-    return res.status(401).send("Invalid signature");
+  const ok = isValidSignature(
+    req.get("X-Hub-Signature-256"),
+    req.rawBody,
+    process.env.GITHUB_WEBHOOK_SECRET,
+  );
+  if (!ok) return res.status(401).send("Invalid signature");
 
   const event = req.get("X-GitHub-Event");
   const payload = req.body;
