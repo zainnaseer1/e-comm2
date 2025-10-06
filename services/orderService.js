@@ -218,3 +218,17 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
     session,
   });
 });
+
+//@DESC get checkout session from stripe and send it as a response
+//@ROUTE POST /api/v1/order/checkout-session
+//@ACCESS auth user
+exports.webhookCheckout = asyncHandler(async (req, res, next) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig);
+  } catch (err) {
+    res.status(400).json(err.message);
+    return;
+  }
+});

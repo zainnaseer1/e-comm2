@@ -8,6 +8,7 @@ const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
 const globalErrorHandler = require("./middleware/errorMiddleware.js");
 const { mountRoutes } = require("./routes"); // will auto use index.js file
+const order = require("./services/orderService");
 
 require("dotenv").config({ path: "config.env" });
 
@@ -26,6 +27,12 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
+// checkou webhook
+app.post(
+  "/webhook-checkout",
+  express.raw({ type: "application/json" }),
+  order.webhookCheckout,
+);
 
 //middleware
 app.use(express.json());
