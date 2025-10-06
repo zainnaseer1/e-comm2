@@ -62,7 +62,7 @@ app.post("/github/webhook", (req, res) => {
   // handle event
   const event = req.get("X-GitHub-Event");
   console.log("GitHub event:", event);
-  res.send("ok", event);
+  res.json({ status: "ok", event });
 });
 
 //logger
