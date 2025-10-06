@@ -21,20 +21,6 @@ app.use(cors()); // handles CORS + preflight, no explicit app.options needed\
 // compress all responses
 app.use(compression());
 
-// app.options("(.*)", cors());  // ❌ remove this line
-//a tiny middleware instead (but again, not needed if cors() is on)
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
-
-// checkout webhook
-// app.post(
-//   "/webhook-checkout",
-//   express.raw({ type: "application/json" }),
-//   order.webhookCheckout,
-// );
-
 // IMPORTANT: capture raw body for HMAC check
 app.use(
   express.json({
