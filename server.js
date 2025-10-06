@@ -48,6 +48,10 @@ app.post("/github/webhook", (req, res) => {
   // handle event
   const event = req.get("X-GitHub-Event");
   console.log("GitHub event: ", event);
+
+  if (event.type === "checkout.session.completed")
+    console.log("create order here.....");
+
   res.send("ok");
 });
 
