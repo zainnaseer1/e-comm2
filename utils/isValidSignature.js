@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 
-module.exports = function isValidSignature(sig256, rawBody, secret) {
+function isValidSignature(sig256, rawBody, secret) {
   if (!secret) return false; // don’t call createHmac with undefined
   if (!sig256 || !rawBody) return false;
 
@@ -11,4 +11,6 @@ module.exports = function isValidSignature(sig256, rawBody, secret) {
   } catch {
     return false;
   }
-};
+}
+
+module.exports = isValidSignature;
