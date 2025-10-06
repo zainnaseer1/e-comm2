@@ -219,7 +219,7 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   });
 });
 
-//@DESC get checkout session from stripe and send it as a response
+//@DESC get checkout session from stripe and send it as a response test
 //@ROUTE POST /api/v1/order/checkout-session
 //@ACCESS auth user
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
