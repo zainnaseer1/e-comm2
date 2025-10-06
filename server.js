@@ -8,7 +8,7 @@ const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
 const globalErrorHandler = require("./middleware/errorMiddleware.js");
 const { mountRoutes } = require("./routes"); // will auto use index.js file
-const order = require("./services/orderService");
+// const order = require("./services/orderService");
 
 require("dotenv").config({ path: "config.env" });
 
@@ -27,17 +27,53 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
-// checkou webhook
-app.post(
-  "/webhook-checkout",
-  express.raw({ type: "application/json" }),
-  order.webhookCheckout,
-);
+
+// checkout webhook
+// app.post(
+//   "/webhook-checkout",
+//   express.raw({ type: "application/json" }),
+//   order.webhookCheckout,
+// );
 
 //middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
+
+// IMPORTANT: capture raw body for HMAC check
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
+
+const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET; // same value you set in GitHub
+
+function isValidSignature(sig256, rawBody) {
+  if (!sig256) return false;
+  const hmac = crypto.createHmac("sha256", GITHUB_SECRET);
+  const digest = "sha256=" + hmac.update(rawBody).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(sig256), Buffer.from(digest));
+}
+
+app.post("/github/webhook", (req, res) => {
+  const sig = req.get("X-Hub-Signature-256");
+  if (!isValidSignature(sig, req.rawBody))
+    return res.status(401).send("Invalid signature");
+
+  const event = req.get("X-GitHub-Event");
+  const payload = req.body;
+
+  // handle events
+  if (event === "push") {
+    console.log("Push to:", payload.ref, "by", payload.pusher?.name);
+    // do something (deploy, run CI, etc.)
+  }
+
+  res.status(200).send("ok");
+});
 
 //logger
 // if (process.env.NODE_ENV === "development") {
