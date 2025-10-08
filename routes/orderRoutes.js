@@ -18,7 +18,12 @@ router.post(
   s.createCashOrder,
 );
 
-router.get("/checkout-session", auth.allowedTo("user"), s.checkoutSession);
+router.get(
+  "/checkout-session",
+  auth.allowedTo("user"),
+  s.checkoutSession,
+  s.webhookCheckout,
+);
 
 router.get(
   "/",

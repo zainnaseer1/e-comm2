@@ -8,6 +8,7 @@ const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
 const globalErrorHandler = require("./middleware/errorMiddleware.js");
 const { mountRoutes } = require("./routes"); // will auto use index.js file
+const { webhookCheckout } = require("./services/orderService.js");
 const isValidSignature = require("./utils/isValidSignature"); // const order = require("./services/orderService");
 
 require("dotenv").config({ path: "config.env" });
@@ -29,6 +30,14 @@ app.use(
     },
   }),
 );
+
+// Checkout webhook
+app.post(
+  "/webhook-checkout",
+  express.raw({ type: "application/json" }),
+  webhookCheckout,
+);
+
 //middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

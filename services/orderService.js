@@ -223,12 +223,21 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
 //@ROUTE POST /api/v1/order/checkout-session
 //@ACCESS auth user
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
+  const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
+  // const sig = req.get("X-Hub-Signature-256");
   const sig = req.headers["stripe-signature"];
   let event;
+
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig);
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
   } catch (err) {
-    res.status(400).json(err.message);
-    return;
+    return res.status(400).json(err.message);
   }
+  if (event.type === "checkout.session.completed") {
+    console.log("create order here.....");
+    console.log(event.data.object.client_reference_id);
+    //  Create order
+    createCardOrder(event.data.object);
+  }
+  res.status(200).json({ received: true });
 });
