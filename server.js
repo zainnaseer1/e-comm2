@@ -83,7 +83,7 @@ app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0"; // ← important for containers
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`Server listening on http://${HOST}:${PORT}`);
 });
 

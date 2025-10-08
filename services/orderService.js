@@ -219,42 +219,46 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   });
 });
 
-//@DESC get checkout session from stripe and send it as a response
-//@ROUTE POST /api/v1/order/checkout-session
-//@ACCESS auth user
-const createCardOrder = asyncHandler(async (session) => {
+//@DESC create order after successful card charge
+//@ROUTE POST /webhook-checkout
+//@ACCESS public (verified by Stripe signature)
+const createCardOrder = async (session) => {
   const cartId = session.client_reference_id;
-  const shippingAddress = session.metadata.shippingAddress;
   const userId = session.metadata.userId;
-  const amount_total = (session.amount_total * 100) / 100;
+  const shippingAddress = JSON.parse(session.metadata.shippingAddress || "{}");
+  const amountTotal = session.amount_total / 100;
 
   const cart = await Cart.findById(cartId);
   const user = await User.findById(userId);
 
-  //3) create order with required settings, make sure payment method is cash
-  const order = await Order.create({
-    user: req.user._id,
-    shippingAddress: shippingAddress,
-    phone: req.user.phone || req.body.phone,
+  if (!cart || !user) {
+    console.warn(
+      `Skipping card order creation; cart ${cartId} or user ${userId} missing`,
+    );
+    return;
+  }
+
+  await Order.create({
+    user: user._id,
+    shippingAddress,
+    phone: user.phone,
     cartItems: cart.cartItems,
-    totalOrderPrice: amount_total,
+    totalOrderPrice: amountTotal,
     isPaid: true,
     paidAt: Date.now(),
     paymentMethod: "card",
   });
 
-  if (order) {
-    const bulkOptions = cart.cartItems.map((item) => ({
-      updateOne: {
-        filter: { _id: item.product }, //find all products with provided id in cart.cartItems.product._id
-        update: { $inc: { quantity: -item.quantity, sold: +item.quantity } }, // update: reduce item quantity , increment item.sold
-      },
-    }));
+  const bulkOptions = cart.cartItems.map((item) => ({
+    updateOne: {
+      filter: { _id: item.product }, // reduce inventory, bump sold count
+      update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
+    },
+  }));
 
-    await Product.bulkWrite(bulkOptions, {});
-    await Cart.findByIdAndDelete(cartId);
-  }
-});
+  await Product.bulkWrite(bulkOptions, {});
+  await Cart.findByIdAndDelete(cartId);
+};
 
 //@DESC checking if payment is completed then create an order
 //@ROUTE POST URL/webhook-checkout
@@ -270,11 +274,16 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
   } catch (err) {
     return res.status(400).json(err.message);
   }
+
   if (event.type === "checkout.session.completed") {
     console.log("create order here on.....");
     console.log(event.data.object.client_reference_id);
-    //  Create order
-    createCardOrder(event.data.object);
+    try {
+      await createCardOrder(event.data.object);
+    } catch (err) {
+      console.error("Failed to create card order from webhook", err);
+      return res.status(500).json({ error: "Failed to create order" });
+    }
   }
   res.status(200).json({ received: true });
 });
