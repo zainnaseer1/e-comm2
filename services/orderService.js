@@ -8,16 +8,8 @@ const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
 const User = require("../models/userModel");
 
-//@DESC create new order
-//@ROUTE POST /api/v1/order/addOne
-//@ACCESS auth user
-exports.createCashOrder = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
-  //1) get cart based on user
-  const cart = await Cart.findOne({ user: req.user._id });
-  if (!cart)
-    return next(new ApiError(`No cart with this user: ${req.user._id}`, 404));
-
+//set main settings, cart price, total price, tax cost, shipping cost, dropOffAddress
+const mainSettings = (cart, user) => {
   //2) get price from cart, check if there is a coupon or not
   // check if there is cart.totalPriceAfterDiscount,
   // assign its value to cartPrice, else keep regular total price
@@ -42,6 +34,39 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
     req.user.addresses[0] ||
     req.body.addressId;
 
+  return (cartPrice, taxCost, shippingCost, totalOrderPrice, dropOffAddress);
+};
+//set bulk options
+// after submitting order, update ${product.sold} && ${product.quantity} properties
+// bulk lets you execute more than one operation(filter, then update) in one command.
+// iterating on each item within cart using map(), item== cart.cartItems
+const orderBulk = asyncHandler(async (cart) => {
+  const bulkOptions = cart.cartItems.map((item) => ({
+    updateOne: {
+      filter: { _id: item.product }, //find all products with provided id in cart.cartItems.product._id
+      update: { $inc: { quantity: -item.quantity, sold: +item.quantity } }, // update: reduce item quantity , increment item.sold
+    },
+  }));
+
+  await Product.bulkWrite(bulkOptions, {});
+  //5) clear user's cart
+  await Cart.findByIdAndDelete(cart._id);
+});
+
+//@DESC create new order
+//@ROUTE POST /api/v1/order/addOne
+//@ACCESS auth user
+exports.createCashOrder = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id);
+
+  //1) get cart based on user
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart)
+    return next(new ApiError(`No cart with this user: ${req.user._id}`, 404));
+
+  //2) get price from cart, check if there is a coupon or not
+  mainSettings(cart, user);
+
   //3) create order with required settings, make sure payment method is cash
   const order = await Order.create({
     user: req.user._id,
@@ -49,25 +74,10 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
     phone: req.user.phone || req.body.phone,
     cartItems: cart.cartItems,
     totalOrderPrice: totalOrderPrice,
-    // issueDate: Date.now(), // mongoose auto generate createdAt
   });
 
-  //4) after submitting order, update ${product.sold} && ${product.quantity} properties
-  // bulk lets you execute more than one operation(filter, then update) in one command.
-  // iterating on each item within cart using map(), item== cart.cartItems
-  if (order) {
-    const bulkOptions = cart.cartItems.map((item) => ({
-      updateOne: {
-        filter: { _id: item.product }, //find all products with provided id in cart.cartItems.product._id
-        update: { $inc: { quantity: -item.quantity, sold: +item.quantity } }, // update: reduce item quantity , increment item.sold
-      },
-    }));
+  orderBulk(cart);
 
-    await Product.bulkWrite(bulkOptions, {});
-  }
-
-  //5) clear user's cart
-  await Cart.findByIdAndDelete(cart._id);
   res.status(201).json({
     status: "success",
     message: `Your order '${order._id}' had been successfully received.`,
@@ -249,16 +259,7 @@ const createCardOrder = async (session, transactionId) => {
     paymentMethod: "card",
     transaction: transactionId,
   });
-
-  const bulkOptions = cart.cartItems.map((item) => ({
-    updateOne: {
-      filter: { _id: item.product }, // reduce inventory, bump sold count
-      update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
-    },
-  }));
-
-  await Product.bulkWrite(bulkOptions, {});
-  await Cart.findByIdAndDelete(cartId);
+  orderBulk(cart);
 };
 
 //@DESC checking if payment is completed then create an order

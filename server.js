@@ -33,7 +33,7 @@ app.use(
 
 // Checkout webhook
 app.post(
-  "/webhook-checkout", // the link stripe is listening to so that it do the below action
+  "/webhook-checkout", // the link stripe is listening on so that it do the below action
   express.raw({ type: "application/json" }),
   webhookCheckout,
 );
@@ -45,6 +45,11 @@ app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files 
 
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config({ path: "config.env" });
+}
+//logger
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+  console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
 }
 
 // app.post("/github/webhook", (req, res) => {
@@ -60,12 +65,6 @@ if (process.env.NODE_ENV !== "production") {
 
 //   res.send("ok");
 // });
-
-//logger
-// if (process.env.NODE_ENV === "development") {
-//   app.use(morgan("dev"));
-//   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
-// }
 
 // use the routes from routes/index.js
 mountRoutes(app);
