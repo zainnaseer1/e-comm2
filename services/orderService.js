@@ -219,6 +219,43 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   });
 });
 
+//@DESC get checkout session from stripe and send it as a response
+//@ROUTE POST /api/v1/order/checkout-session
+//@ACCESS auth user
+const createCardOrder = asyncHandler(async (session) => {
+  const cartId = session.client_reference_id;
+  const shippingAddress = session.metadata.shippingAddress;
+  const userId = session.metadata.userId;
+  const amount_total = (session.amount_total * 100) / 100;
+
+  const cart = await Cart.findById(cartId);
+  const user = await User.findById(userId);
+
+  //3) create order with required settings, make sure payment method is cash
+  const order = await Order.create({
+    user: req.user._id,
+    shippingAddress: shippingAddress,
+    phone: req.user.phone || req.body.phone,
+    cartItems: cart.cartItems,
+    totalOrderPrice: amount_total,
+    isPaid: true,
+    paidAt: Date.now(),
+    paymentMethod: "card",
+  });
+
+  if (order) {
+    const bulkOptions = cart.cartItems.map((item) => ({
+      updateOne: {
+        filter: { _id: item.product }, //find all products with provided id in cart.cartItems.product._id
+        update: { $inc: { quantity: -item.quantity, sold: +item.quantity } }, // update: reduce item quantity , increment item.sold
+      },
+    }));
+
+    await Product.bulkWrite(bulkOptions, {});
+    await Cart.findByIdAndDelete(cartId);
+  }
+});
+
 //@DESC get checkout session from stripe and send it as a response test
 //@ROUTE POST /api/v1/order/checkout-session
 //@ACCESS auth user
@@ -234,10 +271,10 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
     return res.status(400).json(err.message);
   }
   if (event.type === "checkout.session.completed") {
-    console.log("create order here.....");
+    console.log("create order here on.....");
     console.log(event.data.object.client_reference_id);
     //  Create order
-    // createCardOrder(event.data.object);
+    createCardOrder(event.data.object);
   }
   res.status(200).json({ received: true });
 });

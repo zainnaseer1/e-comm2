@@ -47,22 +47,19 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config({ path: "config.env" });
 }
 
-app.post("/github/webhook", (req, res) => {
-  const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
-  const sig = req.get("X-Hub-Signature-256");
+// app.post("/github/webhook", (req, res) => {
+//   const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
+//   const sig = req.get("X-Hub-Signature-256");
 
-  const ok = isValidSignature(sig, req.rawBody, secret);
-  if (!ok) return res.status(401).send("Invalid signature");
+//   const ok = isValidSignature(sig, req.rawBody, secret);
+//   if (!ok) return res.status(401).send("Invalid signature");
 
-  // handle event
-  const event = req.get("X-GitHub-Event");
-  console.log("GitHub event: ", event);
+//   // handle event
+//   const event = req.get("X-GitHub-Event");
+//   console.log("GitHub event: ", event);
 
-  if (event.type === "checkout.session.completed")
-    console.log("create order here.....");
-
-  res.send("ok");
-});
+//   res.send("ok");
+// });
 
 //logger
 // if (process.env.NODE_ENV === "development") {
