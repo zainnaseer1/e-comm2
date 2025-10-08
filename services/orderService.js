@@ -33,7 +33,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
   let addrIndex = null;
   if (req.body.addressAlias) {
     addrIndex = user.addresses.findIndex(
-      (address) => (address.alias = req.body.addressAlias),
+      (address) => address.alias === req.body.addressAlias,
     );
   }
 
@@ -223,7 +223,7 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
 //@ROUTE POST /api/v1/order/checkout-session
 //@ACCESS auth user
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
-  const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
+  const secret = process.env.STRIPE_WEBHOOK_SECRET; // set in Render → Environment
   // const sig = req.get("X-Hub-Signature-256");
   const sig = req.headers["stripe-signature"];
   let event;
