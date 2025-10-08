@@ -220,13 +220,12 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
 });
 
 //@DESC create order after successful card charge
-//@ROUTE POST /webhook-checkout
-//@ACCESS public (verified by Stripe signature)
-const createCardOrder = async (session) => {
+const createCardOrder = async (session, transactionId) => {
   const cartId = session.client_reference_id;
   const userId = session.metadata.userId;
   const shippingAddress = JSON.parse(session.metadata.shippingAddress || "{}");
   const amountTotal = session.amount_total / 100;
+  const transactionId = transactionId;
 
   const cart = await Cart.findById(cartId);
   const user = await User.findById(userId);
@@ -247,6 +246,7 @@ const createCardOrder = async (session) => {
     isPaid: true,
     paidAt: Date.now(),
     paymentMethod: "card",
+    transaction: transactionId,
   });
 
   const bulkOptions = cart.cartItems.map((item) => ({
@@ -279,7 +279,7 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
     console.log("create order here on.....");
     console.log(event.data.object.client_reference_id);
     try {
-      await createCardOrder(event.data.object);
+      await createCardOrder(event.data.object, event.id);
     } catch (err) {
       console.error("Failed to create card order from webhook", err);
       return res.status(500).json({ error: "Failed to create order" });
