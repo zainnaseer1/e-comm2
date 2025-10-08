@@ -33,7 +33,7 @@ app.use(
 
 // Checkout webhook
 app.post(
-  "/webhook-checkout",
+  "/webhook-checkout", // the link stripe is listening to so that it do the below action
   express.raw({ type: "application/json" }),
   webhookCheckout,
 );
