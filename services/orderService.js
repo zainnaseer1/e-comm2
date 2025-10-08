@@ -121,6 +121,7 @@ exports.isPaidToTrue = asyncHandler(async (req, res, next) => {
 
   order.isPaid = true;
   order.paidAt = Date.now();
+  order.transaction = "By hand (Cash)";
 
   const updatedOrder = await order.save();
 
