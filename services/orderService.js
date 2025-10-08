@@ -237,7 +237,7 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
     console.log("create order here.....");
     console.log(event.data.object.client_reference_id);
     //  Create order
-    createCardOrder(event.data.object);
+    // createCardOrder(event.data.object);
   }
   res.status(200).json({ received: true });
 });
