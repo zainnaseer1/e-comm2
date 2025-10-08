@@ -256,8 +256,8 @@ const createCardOrder = asyncHandler(async (session) => {
   }
 });
 
-//@DESC get checkout session from stripe and send it as a response test
-//@ROUTE POST /api/v1/order/checkout-session
+//@DESC checking if payment is completed then create an order
+//@ROUTE POST URL/webhook-checkout
 //@ACCESS auth user
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
   const secret = process.env.STRIPE_WEBHOOK_SECRET; // set in Render → Environment
