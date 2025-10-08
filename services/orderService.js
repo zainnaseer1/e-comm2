@@ -225,7 +225,7 @@ const createCardOrder = async (session, transactionId) => {
   const userId = session.metadata.userId;
   const shippingAddress = JSON.parse(session.metadata.shippingAddress || "{}");
   const amountTotal = session.amount_total / 100;
-  const transactionId = transactionId;
+  // const transactionId = transactionId;
 
   const cart = await Cart.findById(cartId);
   const user = await User.findById(userId);
