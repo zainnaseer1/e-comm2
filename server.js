@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path"); //core module to handle file and directory paths
 // const morgan = require("morgan"); //logger
 const compression = require("compression");
+const rateLimit = require("express-rate-limit");
 
 const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
@@ -31,15 +32,8 @@ app.use(
   }),
 );
 
-// Checkout webhook
-app.post(
-  "/webhook-checkout", // the link stripe is listening on so that it do the below action
-  express.raw({ type: "application/json" }),
-  webhookCheckout,
-);
-
 //middleware
-app.use(express.json());
+app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
 
@@ -51,6 +45,16 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
 }
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  ipv6Subnet: 56, // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
+  message: `too many requests please try again in ${windowMs / 1000} minutes.`,
+});
+
+// Apply the rate limiting middleware to all requests.
+app.use("/api", limiter);
 
 // app.post("/github/webhook", (req, res) => {
 //   const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
@@ -68,6 +72,13 @@ if (process.env.NODE_ENV === "development") {
 
 // use the routes from routes/index.js
 mountRoutes(app);
+
+// Checkout webhook
+app.post(
+  "/webhook-checkout", // the link stripe is listening on so that it do the below action
+  express.raw({ type: "application/json" }),
+  webhookCheckout,
+);
 
 app.get("/", (req, res) => res.send("API is running ✅"));
 app.get("/healthz", (req, res) => res.send("ok"));

@@ -36,8 +36,9 @@ const mainSettings = (cart, user) => {
 
   return (cartPrice, taxCost, shippingCost, totalOrderPrice, dropOffAddress);
 };
+
 //set bulk options
-// after submitting order, update ${product.sold} && ${product.quantity} properties
+// after submitting order, update ${product.sold}+ && ${product.quantity}- properties
 // bulk lets you execute more than one operation(filter, then update) in one command.
 // iterating on each item within cart using map(), item== cart.cartItems
 const orderBulk = asyncHandler(async (cart) => {
@@ -52,6 +53,38 @@ const orderBulk = asyncHandler(async (cart) => {
   //5) clear user's cart
   await Cart.findByIdAndDelete(cart._id);
 });
+
+//@DESC create order after successful card charge
+const createCardOrder = async (session, transactionId) => {
+  const cartId = session.client_reference_id;
+  const userId = session.metadata.userId;
+  const shippingAddress = JSON.parse(session.metadata.shippingAddress || "{}");
+  const amountTotal = session.amount_total / 100;
+  // const transactionId = transactionId;
+
+  const cart = await Cart.findById(cartId);
+  const user = await User.findById(userId);
+
+  if (!cart || !user) {
+    console.warn(
+      `Skipping card order creation; cart ${cartId} or user ${userId} missing`,
+    );
+    return;
+  }
+
+  await Order.create({
+    user: user._id,
+    shippingAddress,
+    phone: user.phone,
+    cartItems: cart.cartItems,
+    totalOrderPrice: amountTotal,
+    isPaid: true,
+    paidAt: Date.now(),
+    paymentMethod: "card",
+    transaction: transactionId,
+  });
+  orderBulk(cart);
+};
 
 //@DESC create new order
 //@ROUTE POST /api/v1/order/addOne
@@ -229,38 +262,6 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
     session,
   });
 });
-
-//@DESC create order after successful card charge
-const createCardOrder = async (session, transactionId) => {
-  const cartId = session.client_reference_id;
-  const userId = session.metadata.userId;
-  const shippingAddress = JSON.parse(session.metadata.shippingAddress || "{}");
-  const amountTotal = session.amount_total / 100;
-  // const transactionId = transactionId;
-
-  const cart = await Cart.findById(cartId);
-  const user = await User.findById(userId);
-
-  if (!cart || !user) {
-    console.warn(
-      `Skipping card order creation; cart ${cartId} or user ${userId} missing`,
-    );
-    return;
-  }
-
-  await Order.create({
-    user: user._id,
-    shippingAddress,
-    phone: user.phone,
-    cartItems: cart.cartItems,
-    totalOrderPrice: amountTotal,
-    isPaid: true,
-    paidAt: Date.now(),
-    paymentMethod: "card",
-    transaction: transactionId,
-  });
-  orderBulk(cart);
-};
 
 //@DESC checking if payment is completed then create an order
 //@ROUTE POST URL/webhook-checkout
