@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path"); //core module to handle file and directory paths
-// const morgan = require("morgan"); //logger
+const morgan = require("morgan"); //logger
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 
