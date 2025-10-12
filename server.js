@@ -1,16 +1,16 @@
 const express = require("express");
+const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path"); //core module to handle file and directory paths
 const morgan = require("morgan"); //logger
 const compression = require("compression");
-const rateLimit = require("express-rate-limit");
 
 const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
 const globalErrorHandler = require("./middleware/errorMiddleware.js");
 const { mountRoutes } = require("./routes"); // will auto use index.js file
 const { webhookCheckout } = require("./services/orderService.js");
-const isValidSignature = require("./utils/isValidSignature"); // const order = require("./services/orderService");
+const { createRateLimiter } = require("./utils/sec/rateLimiter.js");
 
 require("dotenv").config({ path: "config.env" });
 
@@ -18,7 +18,7 @@ require("dotenv").config({ path: "config.env" });
 dbConnection();
 // Initialize Express app
 const app = express();
-//enable other domains to access your application
+app.use(helmet()); // secure HTTP headers
 app.use(cors()); // handles CORS + preflight, no explicit app.options needed\
 // compress all responses
 app.use(compression());
@@ -37,27 +37,14 @@ app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
 
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config({ path: "config.env" });
-}
 //logger
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
 }
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 2, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-  ipv6Subnet: 56, // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
-  message: () => {
-    const minutes = Math.ceil(15 * 60 * 1000) / 60000; // → 15
-    return `Too many requests. Try again in ${minutes} minutes.`;
-  },
-});
-
 // Apply the rate limiting middleware to all requests.
-app.use("/api", limiter);
+app.use("/api", createRateLimiter((opts = { limit: 50 }))); // opts={windowsMs,limit,ipv6Subnet,...}
 
 // app.post("/github/webhook", (req, res) => {
 //   const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
