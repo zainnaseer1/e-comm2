@@ -10,7 +10,7 @@ const dbConnection = require("./config/database.js");
 const globalErrorHandler = require("./middleware/errorMiddleware.js");
 const { mountRoutes } = require("./routes"); // will auto use index.js file
 const { webhookCheckout } = require("./services/orderService.js");
-const { createRateLimiter } = require("./utils/sec/rateLimiter.js");
+const { createRateLimiter } = require("./utils/security/rateLimiter.js");
 
 require("dotenv").config({ path: "config.env" });
 

@@ -37,7 +37,7 @@ function createRateLimiter(opts = {}) {
       const now = Date.now();
 
       const resetTimeMs =
-        req.rateLimit?.resetTime instanceof Date // is req.rateLimit exists? if yes check if its an instance of type Date
+        req.rateLimit?.resetTime instanceof Date // is req.rateLimit exists? if yes check if its an instance of type Date  // - `req.rateLimit.resetTime` comes from express-rate-limit store; using it avoids hardcoded 15m.
           ? req.rateLimit.resetTime.getTime() // if yes, use this as resetTimeMs
           : now + windowMs; // Fallback if store doesn't provide resetTime
 
