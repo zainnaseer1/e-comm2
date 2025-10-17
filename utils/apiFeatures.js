@@ -65,9 +65,17 @@ class ApiFeatures {
   }
 
   sort() {
-    const sortBy = this.queryString.sort // req.query.sort , if sort is specified then
-      ? this.queryString.sort.split(",").join(" ") // replace comma with space for mongoose sort
-      : "-createdAt"; // default sort by createdAt desc
+    // accept ?sort=price&sort=sold or ?sort=price,-sold
+    let sortParam = this.reqQuery?.sort;
+
+    // if polluted/duplicated, take the last one
+    if (Array.isArray(sortParam)) sortParam = sortParam.at(-1);
+
+    // final string for Mongoose: "price -sold" etc.
+    const sortBy = sortParam
+      ? String(sortParam).split(",").join(" ")
+      : "-createdAt"; // default
+
     this.mongooseQuery = this.mongooseQuery.sort(sortBy);
     return this;
   }

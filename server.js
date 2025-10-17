@@ -1,6 +1,7 @@
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
+const hpp = require("hpp"); //HPP puts array parameters in req.query and/or req.body aside and just selects the last parameter value.
 const path = require("path"); //core module to handle file and directory paths
 const morgan = require("morgan"); //logger
 const compression = require("compression");
@@ -23,17 +24,16 @@ app.use(cors()); // handles CORS + preflight, no explicit app.options needed\
 // compress all responses
 app.use(compression());
 
+//middleware
 // IMPORTANT: capture raw body for HMAC check
 app.use(
   express.json({
+    limit: "40kb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
-
-//middleware
-app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Serve static files from the 'uploads' directory, localhost:3000/folder-path/filename.jpg
 
@@ -43,8 +43,21 @@ if (process.env.NODE_ENV === "development") {
   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
 }
 
-// Apply the rate limiting middleware to all requests.
+// Apply rate limiting middleware to all requests.
 app.use("/api", createRateLimiter((opts = { limit: 50 }))); // opts={windowsMs,limit,ipv6Subnet,...}
+
+app.use(
+  hpp({
+    whitelist: [
+      "sold",
+      "price",
+      "quantity",
+      "averageRating",
+      "ratingsQuantity",
+      "brand",
+    ],
+  }),
+); // make sure its after parsing (after express.json())
 
 // app.post("/github/webhook", (req, res) => {
 //   const secret = process.env.GITHUB_WEBHOOK_SECRET; // set in Render → Environment
