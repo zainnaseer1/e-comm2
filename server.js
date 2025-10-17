@@ -4,7 +4,10 @@ const cors = require("cors");
 const hpp = require("hpp"); //HPP puts array parameters in req.query and/or req.body aside and just selects the last parameter value.
 const path = require("path"); //core module to handle file and directory paths
 const morgan = require("morgan"); //logger
+const { xss } = require("express-xss-sanitizer");
+
 const compression = require("compression");
+const mongoSanitize = require("express-mongo-sanitize");
 
 const ApiError = require("./utils/apiError.js");
 const dbConnection = require("./config/database.js");
@@ -20,6 +23,7 @@ dbConnection();
 // Initialize Express app
 const app = express();
 app.use(helmet()); // secure HTTP headers
+app.use(xss()); // sanitize req.body and req.query globally
 app.use(cors()); // handles CORS + preflight, no explicit app.options needed\
 // compress all responses
 app.use(compression());
@@ -42,6 +46,16 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`Logging enabled in ${process.env.NODE_ENV} mode`);
 }
+// input sanitization
+// To remove data using these defaults:
+// app.use(mongoSanitize());
+
+// Or, to replace these prohibited characters with _, use:
+app.use(
+  mongoSanitize({
+    replaceWith: "_",
+  }),
+);
 
 // Apply rate limiting middleware to all requests.
 app.use("/api", createRateLimiter((opts = { limit: 50 }))); // opts={windowsMs,limit,ipv6Subnet,...}
